@@ -18,10 +18,8 @@ plicitNess = defaultdict(lambda:[0,0])
 
 '''Get string from index plus text'''
 def tostring(e,out):
-    #print(e)
     if not e:
         return 'none'
-    #return re.sub(' *\n',' ',''.join([out[i] for i in e])).rstrip(string.punctuation)
     return re.sub(' *\n', ' ', ''.join([out[i] for i in e]))
 
 '''Get con string if it exists, log plicitness of contype'''
@@ -61,7 +59,6 @@ def context(e:list,position:list):
     for j,ee in enumerate(e):
         if j < len(e)-1:
             if e[j] + 1 != e[j+1]:
-                #print('noncontig',e,e[j])
                 left.append(e[j])
                 right = e[j+1:]
                 break
@@ -121,11 +118,8 @@ def speclines(e:str,*spec:set):
         print('spec is',spec)
         lin = defaultdict(list)
         for i, file in enumerate(glob.glob(e)):
-            #print('file is',file)
             for element in spec[0]:
-               #print('element is',element)
                 if element in file:
-                    #print(element,file)
                     f = open(file, 'r').readlines()
                     if len(f) >= 1:
                         lin[i] = f
@@ -177,16 +171,11 @@ def corpus(inp1,inp2,out,depth:int,order:int,lxstyle:int):
     text = open(inp2,'r',encoding='ISO-8859-1').read()
     lines = open(inp2,'r',encoding='ISO-8859-1').readlines()
     out = open(out,'w')
-    #counter = 0
     discontinuouscount = 0
     noncontigcount = 0
     removecount = 0
     count = 0
     for line in discourse:
-        #if counter < 300:
-        #    counter += 1
-        #if counter == 300:
-        #    exit()
         if f(line,depth) == 'remove':
             removecount += 1
             continue
@@ -243,10 +232,6 @@ def corpus(inp1,inp2,out,depth:int,order:int,lxstyle:int):
                     oneindexrevised.remove(x)
                 if x in twoindexrevised:
                     twoindexrevised.remove(x)
-        #    outpt = list(set(oneindexrevised + twoindexrevised + conindex))
-        #else:
-        #    outpt = list(set(oneindexrevised + twoindexrevised))
-        #outpt.sort()
         for x in oneindex:
             if x in oneindexrevised:
                 oneindexrevised.remove(x)
@@ -322,198 +307,6 @@ def corpdepth10(order:int,lxstyle:int):
 for x in set(combinations('1010',2)):
     corpdepth10(int(x[0]),int(x[1]))
 
-'''function to build train/dev/test'''
-def num(e:str,corptype:Callable[[str],str],corptypestring:str):
-    dir = pathlib.Path(e.strip('wsj*')).absolute()
-    trainIN = open(f'{dir}/train{corptypestring}.mr','w')
-    devIN = open(f'{dir}/dev{corptypestring}.mr','w')
-    testIN = open(f'{dir}/test{corptypestring}.mr','w')
-    trainGOLD = open(f'{dir}/traingold{corptypestring}.txt','w')
-    devGOLD = open(f'{dir}/devgold{corptypestring}.txt','w')
-    testGOLD = open(f'{dir}/testgold{corptypestring}.txt','w')
-    trainOUT = open(f'{dir}/train{corptypestring}.lx','w')
-    devOUT = open(f'{dir}/dev{corptypestring}.lx','w')
-    testOUT = open(f'{dir}/test{corptypestring}.lx','w')
-    #sumOUT = open(f'{dir}/sumlines{corptypestring}.txt','w')
-    lineInFile = lines(e)
-    lin = dict(lineInFile)
-    number = 0
-    for i in lin.keys():
-        number += len(lin[i])
-    trainlines = []
-    devlines = []
-    testlines = []
-    index = 0
-    for i in list(lin.keys())[index:]:
-        for j in lin[i]:
-            if len(tokenizer(j)['input_ids']) < 1024:
-                trainGOLD.write(j)
-                trainlines.append(j)
-                j = corptype(j)
-                j = j.split('<sep>')
-                trainIN.write('<sep>'.join(j[:len(j)-1])+'\n')
-                trainOUT.write(j[-1])
-        if len(trainlines) >= int(number * .7):
-            index = (list(lin).index(i)+1)
-            break
-    for i in list(lin.keys())[index:]:
-        for j in lin[i]:
-            if len(tokenizer(j)['input_ids']) < 1024:
-                devGOLD.write(j)
-                devlines.append(j)
-                j = corptype(j)
-                j = j.split('<sep>')
-                devIN.write('<sep>'.join(j[:len(j)-1])+'\n')
-                devOUT.write(j[-1])
-        if len(devlines) >= int(number * .15):
-            index = (list(lin).index(i)+1)
-            break
-    for i in list(lin.keys())[index:]:
-        for j in lin[i]:
-            if len(tokenizer(j)['input_ids']) < 1024:
-                testGOLD.write(j)
-                testlines.append(j)
-                j = corptype(j)
-                j = j.split('<sep>')
-                testIN.write('<sep>'.join(j[:len(j)-1])+'\n')
-                testOUT.write(j[-1])
-    return trainlines,devlines,testlines
-for x in set(combinations('1010', 2)):
-    num(f'{currentime}corpusthreedepth10{int(x[0])}{int(x[1])}/wsj*',congone,'congone')
-    num(f'{currentime}corpusthreedepth10{int(x[0])}{int(x[1])}/wsj*',typegone,'typegone')
-
-'''function to build test/dev/train'''
-def numreversesplit(e:str,corptype:Callable[[str],str],corptypestring:str):
-    dir = pathlib.Path(e.strip('wsj*')).absolute()
-    os.makedirs(f'{dir}/reversesplit',exist_ok=True)
-    trainIN = open(f'{dir}/reversesplit/train{corptypestring}.mr','w')
-    devIN = open(f'{dir}/reversesplit/dev{corptypestring}.mr','w')
-    testIN = open(f'{dir}/reversesplit/test{corptypestring}.mr','w')
-    trainGOLD = open(f'{dir}/reversesplit/traingold{corptypestring}.txt','w')
-    devGOLD = open(f'{dir}/reversesplit/devgold{corptypestring}.txt','w')
-    testGOLD = open(f'{dir}/reversesplit/testgold{corptypestring}.txt','w')
-    trainOUT = open(f'{dir}/reversesplit/train{corptypestring}.lx','w')
-    devOUT = open(f'{dir}/reversesplit/dev{corptypestring}.lx','w')
-    testOUT = open(f'{dir}/reversesplit/test{corptypestring}.lx','w')
-    #sumOUT = open(f'{dir}/sumlines{corptypestring}.txt','w')
-    lineInFile = lines(e)
-    lin = dict(lineInFile)
-    number = 0
-    for i in lin.keys():
-        number += len(lin[i])
-    trainlines = []
-    devlines = []
-    testlines = []
-    index = 0
-    for i in list(lin.keys())[index:]:
-        for j in lin[i]:
-            if len(tokenizer(j)['input_ids']) < 1024:
-                testGOLD.write(j)
-                testlines.append(j)
-                j = corptype(j)
-                j = j.split('<sep>')
-                testIN.write('<sep>'.join(j[:len(j)-1])+'\n')
-                testOUT.write(j[-1])
-        if len(testlines) >= int(number * .15):
-            index = (list(lin).index(i)+1)
-            break
-    for i in list(lin.keys())[index:]:
-        for j in lin[i]:
-            if len(tokenizer(j)['input_ids']) < 1024:
-                devGOLD.write(j)
-                devlines.append(j)
-                j = corptype(j)
-                j = j.split('<sep>')
-                devIN.write('<sep>'.join(j[:len(j)-1])+'\n')
-                devOUT.write(j[-1])
-        if len(devlines) >= int(number * .15):
-            index = (list(lin).index(i)+1)
-            break
-    for i in list(lin.keys())[index:]:
-        for j in lin[i]:
-            if len(tokenizer(j)['input_ids']) < 1024:
-                trainGOLD.write(j)
-                trainlines.append(j)
-                j = corptype(j)
-                j = j.split('<sep>')
-                trainIN.write('<sep>'.join(j[:len(j)-1])+'\n')
-                trainOUT.write(j[-1])
-    return trainlines,devlines,testlines
-for x in set(combinations('1010', 2)):
-    numreversesplit(f'{currentime}corpusthreedepth10{int(x[0])}{int(x[1])}/wsj*',congone,'congone')
-    numreversesplit(f'{currentime}corpusthreedepth10{int(x[0])}{int(x[1])}/wsj*',typegone,'typegone')
-
-
-'''function to build test/dev/train'''
-def numdemberg(e:str,corptype:Callable[[str],str],corptypestring:str):
-    E = open('CODI.conn_gen.per_item.csv', 'r')
-    EE = list(csv.DictReader(E, delimiter='\t'))
-    EEE = set([line['wsj'] for line in EE])
-    print('EEE',EEE)
-    dir = pathlib.Path(e.strip('wsj*')).absolute()
-    os.makedirs(f'{dir}/dembergsplit',exist_ok=True)
-    trainIN = open(f'{dir}/dembergsplit/train{corptypestring}.mr','w')
-    devIN = open(f'{dir}/dembergsplit/dev{corptypestring}.mr','w')
-    testIN = open(f'{dir}/dembergsplit/test{corptypestring}.mr','w')
-    trainGOLD = open(f'{dir}/dembergsplit/traingold{corptypestring}.txt','w')
-    devGOLD = open(f'{dir}/dembergsplit/devgold{corptypestring}.txt','w')
-    testGOLD = open(f'{dir}/dembergsplit/testgold{corptypestring}.txt','w')
-    trainOUT = open(f'{dir}/dembergsplit/train{corptypestring}.lx','w')
-    devOUT = open(f'{dir}/dembergsplit/dev{corptypestring}.lx','w')
-    testOUT = open(f'{dir}/dembergsplit/test{corptypestring}.lx','w')
-    #sumOUT = open(f'{dir}/sumlines{corptypestring}.txt','w')
-    lineInFile1 = speclines(e,EEE)
-    #print('lineInFile1',lineInFile1)
-    lin1 = dict(lineInFile1)
-    print('lin1',len(lin1),type(lin1))
-    lineInFile2 = lines(e)
-    lin2 = dict(lineInFile2)
-    print('lin2',len(lin2),type(lin2))
-    lin3 = {k:v for k,v in lin2.items() if v not in [z for x,z in lin1.items()]}
-    print('lin3',len(lin3),type(lin3))
-    number = 0
-    for i in lin3.keys():
-        number += len(lin3[i])
-    trainlines = []
-    devlines = []
-    testlines = []
-    index = 0
-    for i in list(lin1.keys()):
-        for j in lin1[i]:
-            if len(tokenizer(j)['input_ids']) < 1024:
-                testGOLD.write(j)
-                testlines.append(j)
-                j = corptype(j)
-                j = j.split('<sep>')
-                testIN.write('<sep>'.join(j[:len(j)-1])+'\n')
-                testOUT.write(j[-1])
-    for i in list(lin3.keys())[index:]:
-        for j in lin3[i]:
-            if len(tokenizer(j)['input_ids']) < 1024:
-                devGOLD.write(j)
-                devlines.append(j)
-                j = corptype(j)
-                j = j.split('<sep>')
-                devIN.write('<sep>'.join(j[:len(j)-1])+'\n')
-                devOUT.write(j[-1])
-        if len(devlines) >= int(number * .25):
-            index = (list(lin3).index(i)+1)
-            break
-    for i in list(lin3.keys())[index:]:
-        for j in lin3[i]:
-            if len(tokenizer(j)['input_ids']) < 1024:
-                trainGOLD.write(j)
-                trainlines.append(j)
-                j = corptype(j)
-                j = j.split('<sep>')
-                trainIN.write('<sep>'.join(j[:len(j)-1])+'\n')
-                trainOUT.write(j[-1])
-    return trainlines,devlines,testlines
-
-for x in set(combinations('1010', 2)):
-    numdemberg(f'{currentime}corpusthreedepth10{int(x[0])}{int(x[1])}/wsj*',congone,'congone')
-    numdemberg(f'{currentime}corpusthreedepth10{int(x[0])}{int(x[1])}/wsj*',typegone,'typegone')
-
 '''build corpdepthn from corpdepth10 where split = 1 = reverse split, split = 2 = demberg split'''
 def corpdepthn(i:int, order:int, lxstyle:int, *split:int):
     print(i, order, lxstyle, split)
@@ -540,7 +333,6 @@ def corpdepthn(i:int, order:int, lxstyle:int, *split:int):
     print(depth10mr)
     for file in glob.glob(depth10lx):
         out = re.sub('.*/','',file)
-        #outfile = open(f'{currentime}corpusthreedepth{i}{order}{lxstyle}/{reverse}{out}','w')
         outfile = open(f'{direct}{out}','w')
         for line in open(file,'r').readlines():
             outfile.write(line)
@@ -548,7 +340,6 @@ def corpdepthn(i:int, order:int, lxstyle:int, *split:int):
         print(out)
     for file in glob.glob(depth10mr):
         out = re.sub('.*/', '', file)
-        #outfile = open(f'{currentime}corpusthreedepth{i}{order}{lxstyle}/{reverse}{out}','w')
         outfile = open(f'{direct}{out}','w')
         for line in open(file, 'r').readlines():
             tokens = line.split('<sep>')
