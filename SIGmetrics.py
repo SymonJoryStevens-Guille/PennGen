@@ -10,34 +10,7 @@ import wordninja
 now = datetime.datetime.now()
 currentime = now.strftime('%Y-%m-%d')
 
-def grossplicitnesscounts(*f:str):
-    if len(f) == 0:
-        print('give files.')
-        exit()
-    out = open(f'{pathlib.Path(f[0]).parent}/outgrossplicitnesscounts','w')
-    concounts = defaultdict(int)
-    implicit = defaultdict(int)
-    explicit = defaultdict(int)
-    for file in f:
-        inptFile = open(file,'r').readlines()
-        for line in inptFile:
-            line = line.split('<sep>')
-            con = line[0].strip()
-            contype = line[1].strip()
-            concounts[f'{contype},{con}'] += 1
-            if 'none' in con:
-                implicit[contype] += 1
-            else:
-                explicit[contype] += 1
-    for key in sorted(concounts):
-        out.write(f'{key},{concounts[key]}\n')
-    print('Implicit:',implicit)
-    print('Explicit:',explicit)
-    for key in implicit:
-        print(f'{key}ImplicitProb: {implicit[key]/(implicit[key]+explicit[key])}')
-
-#grossplicitnesscounts('corpusthreedepth1revised/sumlinescongonereducedlength.txt')
-
+'''Function to get the connectives of the same type, connectives of the parent type, etc.'''
 def up(type:str,connectives:list):
     type = type.strip().lower()
     connectives = list(set([(c.split('<sep>')[0].strip().lower(),c.split('<sep>')[1].strip().lower()) for c in connectives]))
@@ -68,8 +41,10 @@ def up(type:str,connectives:list):
             continue
     return uptypecons,consident,minusone,minustwo,minusthree
 
+'''Get connective/type info from full reconstructed corpus connective/type file.'''
 connectiveslist = open('goldreconstructed.txt','r').readlines()
 
+'''Function to build file listing connectives by type plus the connectives of the same type, connectives of the parent type, etc.'''
 def concestors():
     types = set([con.split('<sep>')[1].strip() for con in connectiveslist])
     confile = open('concestors.txt','w')
@@ -94,7 +69,9 @@ def concestors():
     confile.close()
 
 connectives = set([con.split('<sep>')[0].strip() for con in connectiveslist])
-'''hyp = modeloutput. inputstring = testMR. reference = goldinput. outstyle = integer determining whether output is word (=1) or sentence (=0).'''
+
+'''Function to get match metrics plus produce metric result files.
+hyp = modeloutput. inputstring = testMR. reference = goldinput. outstyle = integer determining whether output is word (=1) or sentence (=0).'''
 def connectivecongruence(hyp:str,inputstring:str,reference:str,outstyle:int):
     hypstring = hyp
     refstring = reference
@@ -102,7 +79,6 @@ def connectivecongruence(hyp:str,inputstring:str,reference:str,outstyle:int):
         rep = 1
     else:
         rep = 0
-    '''Where submit prefix is present, use submit prefixed file, not unprefixed file.'''
     if rep == 1:
         out = open(f'{pathlib.Path(hyp).parent}/congonemetrics.txt','w')
         outcsvfile = open(f'{pathlib.Path(hyp).parent}/congonemetrics.csv','w',newline='')
@@ -191,10 +167,6 @@ def connectivecongruence(hyp:str,inputstring:str,reference:str,outstyle:int):
     for line1,line2 in zip(hyp, inputstr):
         index = counter
         counter += 1
-        #if counter == 30:
-        #    break
-        #    exit()
-        #index = inputstr.index(line2)
         print('\nnew item.')
         log.write('\nnew item.\n')
         print('index:',index)
@@ -239,7 +211,6 @@ def connectivecongruence(hyp:str,inputstring:str,reference:str,outstyle:int):
         print('wordninja revline1:',revline1)
         log.write(f'wordninja revline1:{revline1}\n')
         revline1 = ' '.join(revline1)
-        revline2 = revline1
         print('revline1 join:',revline1)
         log.write(f'revline1 join:{revline1}\n')
         '''If rep = 0 delete args from input in output by word.'''
@@ -249,11 +220,9 @@ def connectivecongruence(hyp:str,inputstring:str,reference:str,outstyle:int):
                 print(slot)
                 for word in slot:
                     revline1 = re.sub(f'(?<!\w){re.escape(word)}(?!\w)', '', revline1, 1, re.IGNORECASE)
-                    revline2 = re.sub(f'(?<!\w){re.escape(word)}(?!\w)', len(word)*'_', revline2, 1, re.IGNORECASE)
         if outstyle == 1:
             if revline1 == 'none':
                 revline1 = ''
-        log.write(f'revline2:{revline2}\n')
         print('revised revline1:',revline1)
         log.write(f'revised revline1:{revline1}\n')
         explicit = [connective.strip().lower() for connective in connectives if(re.search(f'(?<!\w){connective.strip().lower()}(?!\w)',revline1))]
@@ -269,7 +238,6 @@ def connectivecongruence(hyp:str,inputstring:str,reference:str,outstyle:int):
         revline1 = ' '.join([word for word in explicit])
         print(f'revised revised revline1 (=join of explicit):{revline1}\n')
         log.write(f'revised revised revline1:{revline1}\n')
-        #if con.strip.lower() != 'none'
         if explicit:
             '''get predicted con <sep> rel'''
             conrel.write(f'{explicit[0].strip()} <sep> {type.strip()}\n')
@@ -435,32 +403,5 @@ def connectivecongruence(hyp:str,inputstring:str,reference:str,outstyle:int):
     #breakpoint()
     return sumcounts,goldexplicitcounts,predictedexplicitcounts,expinsyn,expinone,expintwo,expinthree,goldimplicitcounts,predictedimplicitcounts,impinsyn,impinone,impintwo,impinthree
 
-connectivecongruence(f'SIGPAPER/hyp.BERToffshelfcongone.txt',f'SIGPAPERpenndepth1000/testcongone.mr',f'SIGPAPERpenndepth1000/testgoldcongone.txt',0)
-#connectivecongruence(f'SIGPAPER/hyp.BARToffshelfcongone.txt',f'SIGPAPERpenndepth1000/testcongone.mr',f'SIGPAPERpenndepth1000/testgoldcongone.txt',0)
-#connectivecongruence(f'gentextfiles/20211124penndepth1000/hyp.testcongone.txt',f'20211124corpusthreedepth1000/testcongone.mr',f'20211124corpusthreedepth1000/testgoldcongone.txt',0)
-#connectivecongruence(f'gentextfiles/20211124penndepth1000/hyp.testtypegone.txt',f'20211124corpusthreedepth1000/testtypegone.mr',f'20211124corpusthreedepth1000/testgoldtypegone.txt',0)
-exit()
-for i in [1,2,10]:
-    for y in set(combinations('1010',2)):
-        print(y)
-        if y[1] == str(0):
-            #connectivecongruence(f'gentextfiles/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}/hyp.testcongone.txt',f'penn/SIGPAPERpenndepth{i}{y[0]}{y[1]}/testcongone.mr',f'penn/SIGPAPERpenndepth10{y[0]}{y[1]}/testgoldcongone.txt',0)
-            connectivecongruence(f'gentextfiles/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}largeBARTcongonehyptestcongonetxt.hyp.txt',
-                                 f'SIGPAPERpenndepth{i}{y[0]}{y[1]}/testcongone.mr',
-                                 f'SIGPAPERpenndepth10{y[0]}{y[1]}/testgoldcongone.txt', 0)
-        elif y[1] == str(1):
-            #connectivecongruence(f'gentextfiles/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}/hyp.testcongone.txt',f'penn/SIGPAPERpenndepth{i}{y[0]}{y[1]}/testcongone.mr',f'penn/SIGPAPERpenndepth10{y[0]}{y[1]}/testgoldcongone.txt',1)
-            connectivecongruence(f'gentextfiles/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}largeBARTcongonehyptestcongonetxt.hyp.txt',
-                                 f'SIGPAPERpenndepth{i}{y[0]}{y[1]}/testcongone.mr',
-                                 f'SIGPAPERpenndepth10{y[0]}{y[1]}/testgoldcongone.txt', 1)
-        if i == 10:
-            if y[1] == str(0):
-                #connectivecongruence(f'gentextfiles/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}/hyp.testtypegone.txt',f'penn/SIGPAPERpenndepth{i}{y[0]}{y[1]}/testtypegone.mr',f'penn/SIGPAPERpenndepth10{y[0]}{y[1]}/testgoldtypegone.txt',0)
-                connectivecongruence(f'gentextfiles/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}largeBARTtypegonehyptesttypegonetxt.hyp.txt',
-                                     f'SIGPAPERpenndepth{i}{y[0]}{y[1]}/testtypegone.mr',
-                                     f'SIGPAPERpenndepth10{y[0]}{y[1]}/testgoldtypegone.txt', 0)
-            elif y[1] == str(1):
-                #connectivecongruence(f'gentextfiles/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}/hyp.testtypegone.txt',f'penn/SIGPAPERpenndepth{i}{y[0]}{y[1]}/testtypegone.mr',f'penn/SIGPAPERpenndepth10{y[0]}{y[1]}/testgoldtypegone.txt',1)
-                connectivecongruence(f'gentextfiles/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}/DDDSIGPAPERpenndepth{i}{y[0]}{y[1]}largeBARTtypegonehyptesttypegonetxt.hyp.txt',
-                                     f'SIGPAPERpenndepth{i}{y[0]}{y[1]}/testtypegone.mr',
-                                     f'SIGPAPERpenndepth10{y[0]}{y[1]}/testgoldtypegone.txt', 1)
+'''Sub your params here.'''
+connectivecongruence('YOUR_MODEL_OUTPUT.txt','YOUR_TEST_MR.mr','YOUR_GOLD_TEST.txt','YOUR_OUTPUT_STYLE')
